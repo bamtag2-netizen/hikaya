@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /games/{gameId} {
+      // أي لاعب مسجّل (دخول مجهول) يستطيع قراءة اللعبة والانضمام إليها
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.hostUid == request.auth.uid;
+      allow update: if request.auth != null;
+
+      // فصل كل كاتب: يكتبه صاحبه فقط
+      match /parts/{uid} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+      // المسودة خاصة بصاحبها فقط
+      match /drafts/{uid} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      // اقتراح الاسم والتصويت: كل لاعب يكتب سجله فقط
+      match /titles/{uid} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
